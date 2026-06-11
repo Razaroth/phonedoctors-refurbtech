@@ -49,6 +49,8 @@ export interface Device {
   storeLocation: StoreLocation
   partsUsed: DevicePart[]
   notes: string
+  purchasePrice?: number
+  marketValue?: number
   technicianNotes?: TechnicianNote[]
   photos?: string[]
   createdAt: string

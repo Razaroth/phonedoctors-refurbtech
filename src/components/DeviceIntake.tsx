@@ -47,6 +47,8 @@ export function DeviceIntake({ currentUser, onSubmit, onCancel, existingDevice }
   const [customerName, setCustomerName] = useState(existingDevice?.customerName || '')
   const [customerContact, setCustomerContact] = useState(existingDevice?.customerContact || '')
   const [notes, setNotes] = useState(existingDevice?.notes || '')
+  const [purchasePrice, setPurchasePrice] = useState<string>(existingDevice?.purchasePrice?.toString() || '')
+  const [marketValue, setMarketValue] = useState<string>(existingDevice?.marketValue?.toString() || '')
   const [photos, setPhotos] = useState<string[]>(existingDevice?.photos || [])
 
   const totalSteps = 5
@@ -123,6 +125,8 @@ export function DeviceIntake({ currentUser, onSubmit, onCancel, existingDevice }
       storeLocation: existingDevice?.storeLocation || currentUser.storeLocation,
       partsUsed: existingDevice?.partsUsed || [],
       notes,
+      purchasePrice: purchasePrice !== '' ? parseFloat(purchasePrice) : undefined,
+      marketValue: marketValue !== '' ? parseFloat(marketValue) : undefined,
       photos,
       technicianNotes: existingDevice?.technicianNotes || [],
       createdAt: existingDevice?.createdAt || new Date().toISOString(),
@@ -332,6 +336,34 @@ export function DeviceIntake({ currentUser, onSubmit, onCancel, existingDevice }
                 placeholder="Any additional information or special instructions"
                 className="mt-2 min-h-[100px]"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="purchase-price">Purchase Price ($)</Label>
+                <Input
+                  id="purchase-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={purchasePrice}
+                  onChange={(e) => setPurchasePrice(e.target.value)}
+                  placeholder="0.00"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="market-value">Market Value ($)</Label>
+                <Input
+                  id="market-value"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={marketValue}
+                  onChange={(e) => setMarketValue(e.target.value)}
+                  placeholder="0.00"
+                  className="mt-2"
+                />
+              </div>
             </div>
           </div>
         )

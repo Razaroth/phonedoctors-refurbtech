@@ -221,6 +221,26 @@ export function DeviceDetails({ device, onBack, onEdit, onDelete, onUpdateStatus
                   <Label className="text-muted-foreground">Created</Label>
                   <p className="font-medium mt-1">{formatDateTime(device.createdAt)}</p>
                 </div>
+                {device.purchasePrice !== undefined && (
+                  <div>
+                    <Label className="text-muted-foreground">Purchase Price</Label>
+                    <p className="font-medium mt-1">${device.purchasePrice.toFixed(2)}</p>
+                  </div>
+                )}
+                {device.marketValue !== undefined && (
+                  <div>
+                    <Label className="text-muted-foreground">Market Value</Label>
+                    <p className="font-medium mt-1">${device.marketValue.toFixed(2)}</p>
+                  </div>
+                )}
+                {device.purchasePrice !== undefined && device.marketValue !== undefined && (
+                  <div>
+                    <Label className="text-muted-foreground">Potential Profit</Label>
+                    <p className={`font-medium mt-1 ${device.marketValue - device.purchasePrice >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                      ${(device.marketValue - device.purchasePrice).toFixed(2)}
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
