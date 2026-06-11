@@ -1,4 +1,4 @@
-import { Device, DeviceStatus, TechnicianNote } from '@/lib/types'
+import { Device, DeviceStatus, TechnicianNote, DevicePart } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Pencil, Plus, Check, X, Trash, Camera } from '@phosphor-icons/react'
+import { ArrowLeft, Pencil, Plus, Check, X, Trash, Camera, Minus } from '@phosphor-icons/react'
 import { formatDateTime, getStatusLabel, getStatusVariant, getDeviceTypeLabel, compressImage } from '@/lib/helpers'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -31,17 +31,22 @@ interface DeviceDetailsProps {
   onAddNote: (deviceId: string, note: string) => void
   onEditNote: (deviceId: string, noteId: string, updatedNote: string) => void
   onAddPhotos: (deviceId: string, photos: string[]) => void
+  onUpdateParts: (deviceId: string, parts: DevicePart[]) => void
   currentUserName: string
   currentUserId: string
 }
 
-export function DeviceDetails({ device, onBack, onEdit, onDelete, onUpdateStatus, onAddNote, onEditNote, onAddPhotos, currentUserName, currentUserId }: DeviceDetailsProps) {
+export function DeviceDetails({ device, onBack, onEdit, onDelete, onUpdateStatus, onAddNote, onEditNote, onAddPhotos, onUpdateParts, currentUserName, currentUserId }: DeviceDetailsProps) {
   const [status, setStatus] = useState<DeviceStatus>(device.status)
   const [newNote, setNewNote] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editNoteText, setEditNoteText] = useState('')
   const [localPhotos, setLocalPhotos] = useState<string[]>(device.photos || [])
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [localParts, setLocalParts] = useState<DevicePart[]>(device.partsUsed || [])
+  const [newPartName, setNewPartName] = useState('')
+  const [newPartCost, setNewPartCost] = useState('')
+  const [newPartQty, setNewPartQty] = useState('1')
 
   const handleStatusChange = (newStatus: string) => {
     const deviceStatus = newStatus as DeviceStatus
@@ -99,6 +104,32 @@ export function DeviceDetails({ device, onBack, onEdit, onDelete, onUpdateStatus
     onAddPhotos(device.id, updated)
     toast.success('Photo removed')
   }
+
+  const handleAddPart = () => {
+    if (!newPartName.trim()) { toast.error('Enter a part name'); return }
+    const part: DevicePart = {
+      id: Date.now().toString(),
+      partName: newPartName.trim(),
+      quantity: parseInt(newPartQty) || 1,
+      pricePerUnit: newPartCost !== '' ? parseFloat(newPartCost) : undefined,
+    }
+    const updated = [...localParts, part]
+    setLocalParts(updated)
+    onUpdateParts(device.id, updated)
+    setNewPartName('')
+    setNewPartCost('')
+    setNewPartQty('1')
+    toast.success('Part added')
+  }
+
+  const handleRemovePart = (partId: string) => {
+    const updated = localParts.filter(p => p.id !== partId)
+    setLocalParts(updated)
+    onUpdateParts(device.id, updated)
+    toast.success('Part removed')
+  }
+
+  const totalPartsCost = localParts.reduce((sum, p) => sum + ((p.pricePerUnit || 0) * p.quantity), 0)
 
   const sortedNotes = [...(device.technicianNotes || [])].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -233,11 +264,17 @@ export function DeviceDetails({ device, onBack, onEdit, onDelete, onUpdateStatus
                     <p className="font-medium mt-1">${device.marketValue.toFixed(2)}</p>
                   </div>
                 )}
+                {totalPartsCost > 0 && (
+                  <div>
+                    <Label className="text-muted-foreground">Total Parts Cost</Label>
+                    <p className="font-medium mt-1 text-destructive">-${totalPartsCost.toFixed(2)}</p>
+                  </div>
+                )}
                 {device.purchasePrice !== undefined && device.marketValue !== undefined && (
                   <div>
                     <Label className="text-muted-foreground">Potential Profit</Label>
-                    <p className={`font-medium mt-1 ${device.marketValue - device.purchasePrice >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                      ${(device.marketValue - device.purchasePrice).toFixed(2)}
+                    <p className={`font-medium mt-1 ${device.marketValue - device.purchasePrice - totalPartsCost >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                      ${(device.marketValue - device.purchasePrice - totalPartsCost).toFixed(2)}
                     </p>
                   </div>
                 )}
@@ -273,29 +310,70 @@ export function DeviceDetails({ device, onBack, onEdit, onDelete, onUpdateStatus
                 </div>
               </div>
 
-              {device.partsUsed.length > 0 && (
-                <div>
-                  <Label className="text-muted-foreground mb-3 block">Parts Used</Label>
+              <div className="space-y-3">
+                <Label className="text-muted-foreground block">Parts & Costs</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Part name"
+                    value={newPartName}
+                    onChange={e => setNewPartName(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Qty"
+                    min="1"
+                    value={newPartQty}
+                    onChange={e => setNewPartQty(e.target.value)}
+                    className="flex h-9 w-20 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Cost ($)"
+                    min="0"
+                    step="0.01"
+                    value={newPartCost}
+                    onChange={e => setNewPartCost(e.target.value)}
+                    className="flex h-9 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                  <Button size="sm" onClick={handleAddPart} className="bg-accent hover:bg-accent/90 shrink-0">
+                    <Plus size={16} weight="bold" />
+                  </Button>
+                </div>
+
+                {localParts.length > 0 ? (
                   <div className="space-y-2">
-                    {device.partsUsed.map(part => (
+                    {localParts.map(part => (
                       <div key={part.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                         <div>
                           <p className="font-medium">{part.partName}</p>
-                          {part.partNumber && (
-                            <p className="text-sm text-muted-foreground font-mono">{part.partNumber}</p>
-                          )}
+                          <p className="text-sm text-muted-foreground">Qty: {part.quantity}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">Qty: {part.quantity}</p>
-                          {part.supplier && (
-                            <p className="text-sm text-muted-foreground capitalize">{part.supplier}</p>
+                        <div className="flex items-center gap-3">
+                          {part.pricePerUnit !== undefined && (
+                            <div className="text-right">
+                              <p className="text-sm font-medium">${(part.pricePerUnit * part.quantity).toFixed(2)}</p>
+                              {part.quantity > 1 && (
+                                <p className="text-xs text-muted-foreground">${part.pricePerUnit.toFixed(2)} ea</p>
+                              )}
+                            </div>
                           )}
+                          <Button size="sm" variant="ghost" onClick={() => handleRemovePart(part.id)} className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                            <Minus size={14} />
+                          </Button>
                         </div>
                       </div>
                     ))}
+                    <div className="flex items-center justify-between p-3 border-t font-semibold">
+                      <span>Total Parts Cost</span>
+                      <span>${totalPartsCost.toFixed(2)}</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground">No parts added yet</p>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="notes" className="space-y-6">

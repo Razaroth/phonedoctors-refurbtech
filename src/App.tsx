@@ -215,6 +215,22 @@ function App() {
     )
   }
 
+  const handleUpdateParts = (deviceId: string, parts: import('./lib/types').DevicePart[]) => {
+    setDevices(currentDevices => {
+      const deviceList = getDeviceList(currentDevices)
+      return deviceList.map(d =>
+        d.id === deviceId
+          ? { ...d, partsUsed: parts, updatedAt: new Date().toISOString() }
+          : d
+      )
+    })
+    setSelectedDevice(current =>
+      current?.id === deviceId
+        ? { ...current, partsUsed: parts, updatedAt: new Date().toISOString() }
+        : current
+    )
+  }
+
   const handleDeleteDevice = (deviceId: string) => {
     setDevices(currentDevices => {
       const deviceList = getDeviceList(currentDevices)
@@ -285,6 +301,7 @@ function App() {
             onAddNote={handleAddNote}
             onEditNote={handleEditNote}
             onAddPhotos={handleAddPhotos}
+            onUpdateParts={handleUpdateParts}
             currentUserName={currentUser.fullName}
             currentUserId={currentUser.id}
           />
