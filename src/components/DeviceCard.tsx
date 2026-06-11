@@ -100,7 +100,14 @@ export function DeviceCard({ device, onClick }: DeviceCardProps) {
               
               <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
                 <span>{device.technicianName}</span>
-                <span>{formatDate(device.createdAt)}</span>
+                <div className="flex items-center gap-3">
+                  {device.purchasePrice !== undefined && device.marketValue !== undefined && (
+                    <span className={`font-medium ${device.marketValue - device.purchasePrice >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                      {device.marketValue - device.purchasePrice >= 0 ? '+' : ''}${(device.marketValue - device.purchasePrice).toFixed(2)}
+                    </span>
+                  )}
+                  <span>{formatDate(device.createdAt)}</span>
+                </div>
               </div>
 
               {device.photos && device.photos.length > 0 && (
